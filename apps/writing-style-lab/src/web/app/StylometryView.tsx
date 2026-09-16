@@ -50,10 +50,10 @@ export function StylometryView({
   const lines = useMemo(() => (stylometry ? stylometryLines(stylometry) : []), [stylometry]);
   if (!stylometry) return null;
   return (
-    <div className="stylometry-block">
+    <div className="stylometry">
       <h4 className="sub-title">{title}</h4>
       {note && <p className="hint-line">{note}</p>}
-      <ul className="stylometry-list">
+      <ul className="stat-lines">
         {lines.map((line, index) => (
           <li key={index}>{line}</li>
         ))}

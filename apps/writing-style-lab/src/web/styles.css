@@ -1063,20 +1063,30 @@ ol {
 }
 
 /* ---------------------------------------------- 程序统计与交叉核对（前端补充）
-   1) 统计清单在统计块里用 tabular-nums，数字对齐才好比对；
+   1) 统计清单用 tabular-nums，数字对齐才好比对（.stat-lines / .stylometry-list 两个名字都兼容）；
    2) 「程序统计与这条说法不一致」的条目：警示色小标签 + 红左边框；
    3) 分析结果里，统计数字与观察列表并排（窄屏自动改回上下堆叠）。 */
 
-.stylometry-list,
-.stat-lines {
+.stylometry,
+.stylometry-block {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #d8d8d8);
+  border-left: 3px solid var(--brand, #2b5cd9);
+  border-radius: 6px;
+  background: #fbfcfe;
+}
+
+.stat-lines,
+.stylometry-list {
   margin: 6px 0 4px;
   padding-left: 18px;
   font-size: 13px;
   line-height: 1.7;
 }
 
-.stylometry-list li,
-.stat-lines li {
+.stat-lines li,
+.stylometry-list li {
   font-variant-numeric: tabular-nums;
 }
 
@@ -1128,11 +1138,13 @@ ol {
   .analysis-block > .kv,
   .analysis-block > .banner,
   .analysis-block > .details,
+  .analysis-block > .hint-line,
   .analysis-block > .limitation-block {
     flex: 1 1 100%;
   }
 
   /* 统计数字与观察列表并排 */
+  .analysis-block > .stylometry,
   .analysis-block > .stylometry-block {
     order: 2;
     flex: 1 1 280px;

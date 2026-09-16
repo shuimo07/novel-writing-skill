@@ -33,6 +33,7 @@ import {
   type PanelNavProps,
 } from './common';
 import { buildProfile, collectScenes, sampleTitle, useLab } from './store';
+import { LimitationList } from './StylometryView';
 
 export interface RulesPanelProps extends PanelNavProps {}
 
@@ -193,7 +194,15 @@ function RuleCard({ rule }: { rule: StyleRule }) {
           { key: '适用范围', value: RULE_SCOPE_LABEL[rule.scope] },
           { key: '约束影响', value: CONSTRAINT_INFLUENCE_LABEL[rule.constraintInfluence] },
           { key: '支持说明', value: rule.supportDescription },
-          { key: '局限', value: rule.limitations.length > 0 ? rule.limitations.join('；') : '（未记录）' },
+          {
+            key: '局限',
+            value:
+              rule.limitations.length > 0 ? (
+                <LimitationList limitations={rule.limitations} />
+              ) : (
+                '（未记录）'
+              ),
+          },
           { key: '来源轮次', value: `${rule.derivedFrom.model} · ${rule.derivedFrom.promptVersion} · ${rule.derivedFrom.runId ?? '（无 runId）'}` },
           { key: '决定时间', value: formatTime(rule.decidedAt) },
           { key: '创建 / 更新', value: `${formatTime(rule.createdAt)} / ${formatTime(rule.updatedAt)}` },

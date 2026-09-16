@@ -23,7 +23,7 @@ import {
   MAX_TOTAL_CHARS_PER_BATCH,
   PROMPT_VERSION,
 } from '../../shared/limits';
-import { checkLengthLimits, computeTextStats, countChars } from '../../shared/text';
+import { checkLengthLimits, countChars } from '../../shared/text';
 import { crossCheckClaims } from '../../shared/stylometry';
 import { describeExclusion, selectSendableSamples } from '../../shared/rules';
 import { isAnalysisUsable } from '../../shared/verify';
@@ -55,9 +55,10 @@ export interface AnalysisPanelProps extends PanelNavProps {
 
 type Phase = 'pending' | 'running' | 'ok' | 'rejected' | 'skipped' | 'cached';
 
-/** 程序统计与模型说法不一致的局限提示（由 shared/verify.ts 的 crossCheckClaims 生成）。 */
-const MISMATCH_NOTE = /^程序统计与这条说法不一致/;
-
+/**
+ * 「程序统计与这条说法不一致」的识别与展示统一放在 ./StylometryView（LimitationList）里，
+ * 保证分析结果与规则卡用的是同一套警示样式，也不会在这里出现第二份正则。
+ */
 interface ItemProgress {
   phase: Phase;
   message: string;
