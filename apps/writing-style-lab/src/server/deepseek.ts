@@ -110,16 +110,8 @@ function toUsage(raw: z.infer<typeof UpstreamResponseSchema>['usage']): Usage {
   return { promptTokens, completionTokens, totalTokens };
 }
 
-/** 合并两次调用的 usage（试写 A/B 各一次）；两边都未知时保持未知。 */
-export function sumUsage(a: Usage, b: Usage): Usage {
-  const add = (x: number | null, y: number | null): number | null =>
-    x === null && y === null ? null : (x ?? 0) + (y ?? 0);
-  return {
-    promptTokens: add(a.promptTokens, b.promptTokens),
-    completionTokens: add(a.completionTokens, b.completionTokens),
-    totalTokens: add(a.totalTokens, b.totalTokens),
-  };
-}
+/** 合并两次调用的 usage（试写 A/B 各一次）。实现放在 shared/usage.ts，浏览器直连模式共用同一份。 */
+export { sumUsage } from '../shared/usage';
 
 function delay(ms: number): Promise<void> {
   // 刻意不 unref：退避等待必须真的等完，否则「进程没有其它句柄时」会在重试前退出。

@@ -94,7 +94,59 @@ GET /            → 200，返回 dist/web 的 SPA 外壳
 | 对照试写 | `ok`，两版同参数（temperature=1.0），312 字 / 314 字 |
 | 归纳不带 `mock` 标志 | `400 CONFIG_MISSING_KEY` —— 开关打开也不会“偷偷”走 Mock |
 
-## 未验证项（必须由你或后续阶段补上）
+## 静态演示版构建（GitHub Pages）
+
+```
+$ PAGES_BASE=/novel-writing-skill/ VITE_STATIC_DEMO=1 npx vite build
+dist/web/index.html                   0.52 kB │ gzip:   0.36 kB
+dist/web/assets/index-*.css          13.84 kB │ gzip:   3.43 kB
+dist/web/assets/index-*.js          322.72 kB │ gzip: 107.93 kB
+```
+
+- `index.html` 里的资源路径为 `/novel-writing-skill/assets/...`，子路径正确（本地版仍是 `/assets/...`，两种并行不冲突）。
+- 产物里包含「静态演示版」「没有服务端」文案，说明 `VITE_STATIC_DEMO` 开关确实生效。
+- 演示版里 `/api/*` 一律在客户端就被拦住并给出明确说明，不会真的发请求；`/api/status` 返回一份本地状态，
+  界面显示「未配置真实分析」，不会出现“连不上服务”的误导横幅。
+- 演示版**不含任何密钥**：Key 从来没进过前端，工作流里还有一道 `grep` 检查，发现疑似密钥就直接中止发布。
+
+**未验证**：真实 Pages 站点的可访问性（需要 workflow 在 GitHub 上跑完，见 `docs/progress.md`）。
+
+## 静态直连模式（BYOK）：与原需求的一处偏离
+
+### 偏离了什么
+
+原提示词第七节要求：**「Key 不使用 VITE_ 等公开前缀，不写进前端、浏览器持久存储、仓库、日志、Skill、备份或错误详情」**，
+即 Key 只能留在服务端环境变量里。
+
+静态托管（GitHub Pages）没有服务端进程。在这个前提下只有两个选择：
+（a）静态页不接受任何模型调用；（b）让访客填**自己的** Key，浏览器直连模型服务（BYOK）。
+本次选择了 (b)，并把影响面限制住：
+
+| 约束 | 静态直连模式 | 本地模式（仍未变） |
+| --- | --- | --- |
+| Key 存放 | 浏览器内存；勾选后只进 sessionStorage（关标签页失效） | 服务端进程环境变量 |
+| localStorage / IndexedDB / 备份 / 导出 / 日志 | **都不写**（有测试断言 localStorage 全程为空） | 不写 |
+| 发给谁 | 只发访客自己填的 https 端点（默认 api.deepseek.com），无本站中转 | 服务端转发，前端拿不到 Key |
+| 花费 | 访客自己的额度 | 部署者自己的额度 |
+
+### 这个模式下的验证（全是打桩 fetch，无真实调用）
+
+- 请求只发往 `https://api.deepseek.com/chat/completions`（或作者配置的 https 端点），带 `Authorization: Bearer`、
+  `response_format`、`thinking.disable`、`temperature=0.2`、`max_tokens=4096`，`credentials: 'omit'`。
+- **校验关卡一条没少**：假引用 → `EVIDENCE_INVALID`；截断 → `TRUNCATED`；无效 JSON → `INVALID_JSON`；
+  空正文 → `EMPTY_RESPONSE`；归纳引用未命中已校验证据 → 该候选被拒。归纳仍走 `buildCandidates` 的降级与去伪重复。
+- 401 不重试（1 次调用即止）；429 重试到额度上限（共 3 次）后报 `QUOTA_EXCEEDED`；额度按轮次隔离。
+- Key 不出现在返回体与错误信息里（有断言）；`localStorage` 全程为空；`sessionStorage` 只在勾选时写入、可清除。
+- 端点只接受 https，明文 http 或非法地址一律回落到默认端点，不会把 Key 发到明文链路。
+- 前端产物里没有 `node:fs/path/url`、`process.env`、`express`（已 grep 产物确认），说明服务端代码没被误打包。
+
+### 仍未验证
+
+- **没有真实调用**：没有可用的 Key，所以「真实模型返回能否通过校验」在两种模式下都还没有结论。
+- **浏览器端手工验收未做**：凭据面板交互、跨域实际表现、以及第三方端点是否允许 CORS，都没有真机验证。
+- 第三方免费端点的可用性/合规性不在本项目担保范围内；README 与界面都已写明「只填你信任的服务」。
+
+
 
 1. **真实 DeepSeek 调用**：仓库里没有 `DEEPSEEK_API_KEY`，所以模型参数、错误分支、重试与
    usage 记录**全部未实测**。测试里所有“通过”都是对本地逻辑与校验关卡的验证，不是对模型效果的验证。

@@ -36,6 +36,37 @@ npm start                 # http://127.0.0.1:8787
 配置项见 `.env.example`。要点：`DEEPSEEK_API_KEY` **只在服务端**（不要加 `VITE_` 前缀），
 不进前端、不进浏览器存储、不进日志、不进备份、不进导出的 Skill。
 
+## 在线演示版（GitHub Pages）
+
+静态直连版：<https://shuimo07.github.io/novel-writing-skill/>
+
+部署由 `.github/workflows/pages.yml` 自动完成（构建前跑类型检查与全部测试，产物再扫一遍疑似密钥，不合格不发布）。
+
+这个页面**只有前端、没有服务端**，所以模型调用走 **BYOK（自带密钥）**：
+在页面顶部「模型凭据」里填**你自己的** API Key，浏览器直连模型服务，花的是你自己的额度。
+不填 Key 也能用全部不依赖模型的功能。
+
+| 不填 Key 就能用 | 需要填 Key |
+| --- | --- |
+| 写作任务卡、写作编辑区与自动保存、直接采样（只读视图/来源自述/切分预览）、本地风格学统计、样本库与偏好标记、备份导出与导入、规则确认、SKILL.md 与 style-profile.json 预览导出 | 分析、归纳、对照试写 |
+
+**Key 去哪了**：只发给 `https://api.deepseek.com`（或你自己填的 OpenAI 兼容端点），不经过本站、不经过任何中转；
+只存在浏览器内存里（勾选后也只进本标签页的 sessionStorage），**不进 localStorage、不进 IndexedDB、不进备份、不进导出的 Skill**，
+界面只回显末 4 位。页面不加载任何第三方脚本。
+
+**端点可配置**：默认 DeepSeek 官方；如果你找到别的 OpenAI 兼容服务（自建 Cloudflare Worker、其它厂商），
+把基础地址填进去就行，代码不用改。两条硬限制：只接受 `https`；对方必须允许浏览器跨域（CORS），否则请改用本地版。
+
+> ⚠️ **与原提示词的一处偏离（已记录在 docs/acceptance.md）**：原需求写的是「Key 不写进前端、不写进浏览器存储，
+> 只留服务端」。静态托管没有服务端，唯一的选择是「不接受模型功能」或「BYOK」。这里选了 BYOK，并把它限制在
+> 静态模式下；**本地版（`npm run dev` / `npm start`）仍然严格遵守原要求：Key 只在服务端进程环境变量里，前端拿不到**。
+
+自己构建演示版：
+
+```bash
+PAGES_BASE=/novel-writing-skill/ VITE_STATIC_DEMO=1 npx vite build   # 产物在 dist/web
+```
+
 ## 使用流程
 
 1. **选题目**：6 张内置任务卡（可改），默认每篇 300—600 字。题目主要限定人物、目标、事件和长度；

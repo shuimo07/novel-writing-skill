@@ -19,6 +19,9 @@
 | 自动测试 | `npx vitest run` → **8 个文件 / 127 个用例全部通过** |
 | 构建与启动 | `npm run build` 通过（tsc 0 错误 + vite 62 模块）；`npm start` 起服务，`/api/status` 与 SPA 均 200 |
 | 端到端链路（Mock，无真实网络） | 分析 `status=ok / obs=5 / attempts=1`；归纳 1 条候选且**自动降级为 preliminary**；试写两版同参数 310/310 字 |
+| 静态演示版（GitHub Pages） | `.github/workflows/pages.yml` + `PAGES_BASE` / `VITE_STATIC_DEMO` 开关；本地已验证两种构建产物（`base=/` 与 `/novel-writing-skill/`）与「资源路径正确、无密钥痕迹、开关生效」 |
+| 静态直连模式（BYOK：访客自带 Key 直连模型） | `src/web/directCredentials.ts` + `directClient.ts` + `app/ApiKeyPanel.tsx`；复用服务端同一套提示词与校验关卡（`server/prompts.ts` 只依赖 shared，可直接被前端 import）。`tests/direct-mode.test.ts` 18 个用例覆盖端点/参数/校验不放松/重试额度/Key 不进持久存储 |
+| 端点可配置 | 默认 DeepSeek 官方，可填任何 OpenAI 兼容的 https 端点（含自建 Worker）；只接受 https，非法地址回落默认 |
 
 ## in_progress
 

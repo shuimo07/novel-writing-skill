@@ -1161,3 +1161,36 @@ ol {
     flex: 1 1 100%;
   }
 }
+
+/* ---------------------------------------------------------- 静态直连模式的凭据面板 */
+
+.key-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+  margin: 10px 0;
+}
+
+.check-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0 4px;
+}
+
+@media (max-width: 640px) {
+  .key-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

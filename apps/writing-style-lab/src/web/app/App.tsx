@@ -3,14 +3,17 @@
  * 不是聊天界面：每个区域是一屏任务，按钮是明确的动作。
  */
 import { useState } from 'react';
-import { Badge, Banner, type TabKey } from './common';
+import { Badge, Banner, Button, type TabKey } from './common';
 import { AnalysisPanel } from './AnalysisPanel';
+import { ApiKeyPanel } from './ApiKeyPanel';
 import { DirectSamplingPanel } from './DirectSamplingPanel';
 import { EditorPanel } from './EditorPanel';
 import { RulesPanel } from './RulesPanel';
 import { TasksPanel } from './TasksPanel';
 import { TryoutPanel } from './TryoutPanel';
 import { LabProvider, useLab } from './store';
+import { STATIC_DEMO, STATIC_DEMO_NOTICE } from '../api';
+import { hasCredentials } from '../directCredentials';
 
 const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: 'tasks', label: '① 任务与样本库', hint: '内置任务卡、样本清单、两个写作入口' },
@@ -26,6 +29,7 @@ function Shell() {
   const [tab, setTab] = useState<TabKey>('tasks');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [draftSignal, setDraftSignal] = useState(0);
+  const [showKeyPanel, setShowKeyPanel] = useState(() => !hasCredentials());
 
   const navigate = (next: TabKey) => setTab(next);
   const bumpDraft = () => setDraftSignal((n) => n + 1);
@@ -73,6 +77,19 @@ function Shell() {
       </nav>
       <p className="nav-hint">{TABS.find((item) => item.key === tab)?.hint}</p>
 
+      {STATIC_DEMO && (
+        <>
+          <Banner tone="warn" title="静态直连模式（GitHub Pages）">
+            {STATIC_DEMO_NOTICE}
+            <div className="action-row">
+              <Button onClick={() => setShowKeyPanel((value) => !value)}>
+                {showKeyPanel ? '收起凭据面板' : '配置模型凭据'}
+              </Button>
+            </div>
+          </Banner>
+          {showKeyPanel && <ApiKeyPanel />}
+        </>
+      )}
       {fatalError && (
         <Banner tone="danger" title="本地数据读取失败">
           {fatalError}
@@ -115,10 +132,18 @@ function Shell() {
       </main>
 
       <footer className="app-footer">
-        <p>
-          本地单用户工具：没有账号、没有云端同步，数据只在这台机器的浏览器里。API Key 只保存在服务端进程的环境变量里，
-          前端不发、不存。所有正文一律按纯文本处理。
-        </p>
+        {STATIC_DEMO ? (
+          <p>
+            静态直连模式：本页只有前端，没有服务端，也不含任何密钥。模型调用由你填的 Key 直连 DeepSeek 完成，
+            花的是你自己的额度；Key 只存在浏览器内存里（勾选后也只到本标签页），不进 localStorage、不进备份、不进导出。
+            你的正文与规则只存在你自己浏览器的 IndexedDB 里。想用服务端托管 Key 的本地版，请跑 `npm run dev`。
+          </p>
+        ) : (
+          <p>
+            本地单用户工具：没有账号、没有云端同步，数据只在这台机器的浏览器里。API Key 只保存在服务端进程的环境变量里，
+            前端不发、不存。所有正文一律按纯文本处理。
+          </p>
+        )}
       </footer>
     </div>
   );
