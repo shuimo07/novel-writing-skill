@@ -1,0 +1,133 @@
+/**
+ * 应用外壳：任务导航（6 个区域）+ 全局错误横幅。
+ * 不是聊天界面：每个区域是一屏任务，按钮是明确的动作。
+ */
+import { useState } from 'react';
+import { Badge, Banner, type TabKey } from './common';
+import { AnalysisPanel } from './AnalysisPanel';
+import { DirectSamplingPanel } from './DirectSamplingPanel';
+import { EditorPanel } from './EditorPanel';
+import { RulesPanel } from './RulesPanel';
+import { TasksPanel } from './TasksPanel';
+import { TryoutPanel } from './TryoutPanel';
+import { LabProvider, useLab } from './store';
+
+const TABS: { key: TabKey; label: string; hint: string }[] = [
+  { key: 'tasks', label: '① 任务与样本库', hint: '内置任务卡、样本清单、两个写作入口' },
+  { key: 'editor', label: '② 写作编辑区', hint: '按题目写、自动保存、提交为样本' },
+  { key: 'direct', label: '③ 直接采样', hint: '把已经写好的文字丢进来' },
+  { key: 'analysis', label: '④ 分析', hint: '待发送清单、逐篇分析、原文依据' },
+  { key: 'rules', label: '⑤ 规则与 Skill', hint: '逐条确认规则、预览与导出' },
+  { key: 'tryout', label: '⑥ 试写·历史·设置', hint: '盲评 A/B、历史版本、备份与状态' },
+];
+
+function Shell() {
+  const { ready, fatalError, writeError, dismissWriteError, status, statusError } = useLab();
+  const [tab, setTab] = useState<TabKey>('tasks');
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [draftSignal, setDraftSignal] = useState(0);
+
+  const navigate = (next: TabKey) => setTab(next);
+  const bumpDraft = () => setDraftSignal((n) => n + 1);
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <div className="app-title">
+          <h1>文风采样器</h1>
+          <p className="app-subtitle">
+            作者亲写样本 → 逐篇分析 → 可核查的规则 → 你自己确认 → 导出 SKILL.md。数据全部存在本机浏览器里。
+          </p>
+        </div>
+        <div className="app-status">
+          {status === null ? (
+            <Badge tone="warn" title={statusError ?? ''}>
+              本地服务状态未知
+            </Badge>
+          ) : (
+            <>
+              <Badge tone={status.apiKeyConfigured ? 'ok' : 'danger'}>
+                {status.apiKeyConfigured ? 'API Key 已配置' : '未配置真实分析'}
+              </Badge>
+              {status.mockEnabled && <Badge tone="mock">Mock 模式</Badge>}
+              <Badge tone="neutral">{status.model}</Badge>
+              <Badge tone="neutral">prompt {status.promptVersion}</Badge>
+            </>
+          )}
+          {!ready && <Badge tone="neutral">正在读取本地数据…</Badge>}
+        </div>
+      </header>
+
+      <nav className="app-nav" aria-label="区域导航">
+        {TABS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={tab === item.key ? 'nav-btn nav-btn-active' : 'nav-btn'}
+            title={item.hint}
+            onClick={() => setTab(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+      <p className="nav-hint">{TABS.find((item) => item.key === tab)?.hint}</p>
+
+      {fatalError && (
+        <Banner tone="danger" title="本地数据读取失败">
+          {fatalError}
+          <br />
+          这样界面上的任何改动都不会被保存。请检查浏览器是否禁用了 IndexedDB（隐私模式常见），修复后刷新页面。
+        </Banner>
+      )}
+      {writeError && (
+        <Banner tone="danger" title="写入本地数据库失败" onDismiss={dismissWriteError}>
+          {writeError}
+        </Banner>
+      )}
+      {statusError && (
+        <Banner tone="warn" title="本地服务没有响应">
+          {statusError}（分析、归纳与试写暂时不可用；样本编辑与规则确认不受影响。）
+        </Banner>
+      )}
+
+      <main className="app-main">
+        {tab === 'tasks' && (
+          <TasksPanel
+            onNavigate={navigate}
+            activeTaskId={activeTaskId}
+            onSelectTask={setActiveTaskId}
+            onDraftLoaded={bumpDraft}
+          />
+        )}
+        {tab === 'editor' && (
+          <EditorPanel
+            onNavigate={navigate}
+            activeTaskId={activeTaskId}
+            onSelectTask={setActiveTaskId}
+            draftSignal={draftSignal}
+          />
+        )}
+        {tab === 'direct' && <DirectSamplingPanel onNavigate={navigate} onDraftLoaded={bumpDraft} />}
+        {tab === 'analysis' && <AnalysisPanel onNavigate={navigate} onSelectTask={setActiveTaskId} />}
+        {tab === 'rules' && <RulesPanel onNavigate={navigate} />}
+        {tab === 'tryout' && <TryoutPanel onNavigate={navigate} />}
+      </main>
+
+      <footer className="app-footer">
+        <p>
+          本地单用户工具：没有账号、没有云端同步，数据只在这台机器的浏览器里。API Key 只保存在服务端进程的环境变量里，
+          前端不发、不存。所有正文一律按纯文本处理。
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+export function App() {
+  return (
+    <LabProvider>
+      <Shell />
+    </LabProvider>
+  );
+}
