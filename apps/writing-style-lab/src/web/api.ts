@@ -33,7 +33,14 @@ import {
   TRYOUT_TARGET_MIN,
 } from '../shared/limits';
 import { ApiClientError } from './clientError';
-import { directAnalyzeSample, directDistill, directTryout } from './directClient';
+import {
+  directAnalyzeSample,
+  directDistill,
+  directMockAnalyzeSample,
+  directMockDistill,
+  directMockTryout,
+  directTryout,
+} from './directClient';
 import { getCredentials } from './directCredentials';
 import type { z } from 'zod';
 
@@ -136,7 +143,8 @@ export async function fetchStatus(): Promise<StatusResponse> {
     return {
       ok: true,
       apiKeyConfigured: credentials !== null,
-      mockEnabled: false,
+      // 没填 Key 时把「试玩」入口放出来：用本机占位数据跑完整流程，不发任何请求。
+      mockEnabled: credentials === null,
       model: credentials?.model ?? 'deepseek-flash（未填 Key）',
       promptVersion: PROMPT_VERSION,
       limits: {
@@ -154,16 +162,16 @@ export async function fetchStatus(): Promise<StatusResponse> {
 }
 
 export async function analyzeSample(req: AnalyzeSampleRequest, mock = false): Promise<AnalyzeSampleResponse> {
-  if (STATIC_DEMO) return directAnalyzeSample(req);
+  if (STATIC_DEMO) return mock ? directMockAnalyzeSample(req) : directAnalyzeSample(req);
   return postJson('/api/analyze-sample', AnalyzeSampleResponseSchema, withMockFlag(req, mock));
 }
 
 export async function distill(req: DistillRequest, mock = false): Promise<DistillResponse> {
-  if (STATIC_DEMO) return directDistill(req);
+  if (STATIC_DEMO) return mock ? directMockDistill(req) : directDistill(req);
   return postJson('/api/distill', DistillResponseSchema, withMockFlag(req, mock));
 }
 
 export async function tryout(req: TryoutRequest, mock = false): Promise<TryoutResponse> {
-  if (STATIC_DEMO) return directTryout(req);
+  if (STATIC_DEMO) return mock ? directMockTryout(req) : directTryout(req);
   return postJson('/api/tryout', TryoutResponseSchema, withMockFlag(req, mock));
 }

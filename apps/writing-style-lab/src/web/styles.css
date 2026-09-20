@@ -1231,3 +1231,22 @@ ol {
     justify-content: flex-end;
   }
 }
+/* -------------------------------------------------------------- 三分钟上手引导 */
+
+.guide-steps {
+  margin: 8px 0 4px;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.85;
+}
+
+.guide-steps li {
+  margin-bottom: 8px;
+}
+
+.guide-steps code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #f1f3f7;
+  font-size: 12.5px;
+}

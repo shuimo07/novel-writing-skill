@@ -40,6 +40,28 @@ import { gateAnalysisOutput } from '../shared/verify';
 import { ApiClientError } from './clientError';
 import { chatCompletionsUrl, getCredentials, type DirectCredentials } from './directCredentials';
 import { DIRECT_MODEL_DEFAULT } from './directCredentials';
+import { mockAnalyzeContent, mockDistillRawRules, mockTryoutText } from '../server/mock';
+
+/** 试玩结果的模型名：一眼能看出不是真模型产出。 */
+export const MOCK_MODEL = 'mock（本地占位数据，未调用模型）';
+
+function toContextSamples(request: DistillRequest): DistillContextSample[] {
+  return request.samples.map((sample) => ({
+    sampleId: sample.sampleId,
+    revision: sample.revision,
+    contentHash: sample.contentHash,
+    sourceDocumentId: sample.originDocumentId,
+    sceneTags: sample.sceneTags,
+    constraintKnown: sample.constraintKnown,
+    taskConstraints: sample.taskConstraints,
+    backgroundContext: sample.backgroundContext,
+    textSample: sample.textSample ?? null,
+    holdout: sample.holdout,
+    useForAnalysis: true,
+    sourceType: sample.sourceType,
+    analysis: sample.analysis,
+  }));
+}
 
 /** 与服务端一致：分析/归纳用 0.2 / 4096；试写用 1.0 / 2048（两版必须同参数）。 */
 export const DIRECT_TRYOUT_TEMPERATURE = 1.0;
@@ -348,21 +370,7 @@ export async function directDistill(request: DistillRequest): Promise<DistillRes
     );
   }
 
-  const contextSamples: DistillContextSample[] = request.samples.map((sample) => ({
-    sampleId: sample.sampleId,
-    revision: sample.revision,
-    contentHash: sample.contentHash,
-    sourceDocumentId: sample.originDocumentId,
-    sceneTags: sample.sceneTags,
-    constraintKnown: sample.constraintKnown,
-    taskConstraints: sample.taskConstraints,
-    backgroundContext: sample.backgroundContext,
-    textSample: sample.textSample ?? null,
-    holdout: sample.holdout,
-    useForAnalysis: true,
-    sourceType: sample.sourceType,
-    analysis: sample.analysis,
-  }));
+  const contextSamples = toContextSamples(request);
 
   const built = buildCandidates({
     rawRules: schema.data.candidates,
@@ -428,5 +436,98 @@ export async function directTryout(request: TryoutRequest): Promise<TryoutRespon
     elapsedMs: baseCall.elapsedMs + skillCall.elapsedMs,
     mock: false,
     usage: sumUsage(baseCall.usage, skillCall.usage),
+  };
+}
+
+/* --------------------------------------------------- 试玩模式（本地占位数据） */
+
+/**
+ * 没有 Key 时的试玩路径：完全在本机用占位数据跑一遍完整流程，**不发任何网络请求**。
+ * 走的是同一套校验关卡（gateAnalysisOutput / buildCandidates），
+ * 结果一律 mock:true —— 归纳出的规则会带 Mock 局限，导出会被 compileExport 直接拦下。
+ */
+export async function directMockAnalyzeSample(request: AnalyzeSampleRequest): Promise<AnalyzeSampleResponse> {
+  const startedAt = Date.now();
+  const paragraphs = splitParagraphs(request.text);
+  const stats = computeTextStats(request.text, paragraphs);
+  assertLimits([{ chars: countChars(request.text) }]);
+
+  const rawContent = mockAnalyzeContent({
+    sampleId: request.sampleId,
+    sampleRevision: request.sampleRevision,
+    paragraphs,
+    stats,
+    constraintKnown: request.constraintKnown,
+  });
+
+  const analysis = gateAnalysisOutput({
+    sampleId: request.sampleId,
+    sampleRevision: request.sampleRevision,
+    contentHash: request.contentHash,
+    taskConstraintsHash: request.taskConstraintsHash,
+    paragraphs,
+    stats,
+    text: request.text,
+    model: MOCK_MODEL,
+    promptVersion: PROMPT_VERSION,
+    temperature: DEFAULT_TEMPERATURE,
+    maxTokens: DEFAULT_MAX_TOKENS,
+    runId: request.runId,
+    mock: true,
+    elapsedMs: Date.now() - startedAt,
+    usage: UNKNOWN_USAGE,
+    attempts: 0,
+    finishReason: 'stop',
+    rawContent,
+    upstreamError: null,
+    constraintKnown: request.constraintKnown,
+  });
+
+  return { ok: true, analysis };
+}
+
+export async function directMockDistill(request: DistillRequest): Promise<DistillResponse> {
+  const startedAt = Date.now();
+  assertLimits(request.samples.map((s) => ({ chars: Math.max(s.chars, s.analysis.stats.chars) })));
+  const built = buildCandidates({
+    rawRules: mockDistillRawRules(request.samples),
+    samples: toContextSamples(request),
+    previousRules: request.previousRules,
+  });
+  return {
+    ok: true,
+    candidates: built.candidates,
+    rejectedCandidates: built.rejected,
+    usage: UNKNOWN_USAGE,
+    model: MOCK_MODEL,
+    promptVersion: PROMPT_VERSION,
+    mock: true,
+    elapsedMs: Date.now() - startedAt,
+  };
+}
+
+export async function directMockTryout(request: TryoutRequest): Promise<TryoutResponse> {
+  const startedAt = Date.now();
+  const base = mockTryoutText({
+    prompt: request.prompt,
+    targetMinChars: request.targetMinChars,
+    targetMaxChars: request.targetMaxChars,
+    withSkill: false,
+  });
+  const withSkill = mockTryoutText({
+    prompt: request.prompt,
+    targetMinChars: request.targetMinChars,
+    targetMaxChars: request.targetMaxChars,
+    withSkill: true,
+  });
+  return {
+    ok: true,
+    base: { text: base, chars: countChars(base), usage: UNKNOWN_USAGE, finishReason: 'stop' },
+    withSkill: { text: withSkill, chars: countChars(withSkill), usage: UNKNOWN_USAGE, finishReason: 'stop' },
+    model: MOCK_MODEL,
+    params: { temperature: DIRECT_TRYOUT_TEMPERATURE, maxTokens: DIRECT_TRYOUT_MAX_TOKENS },
+    elapsedMs: Date.now() - startedAt,
+    mock: true,
+    usage: UNKNOWN_USAGE,
   };
 }

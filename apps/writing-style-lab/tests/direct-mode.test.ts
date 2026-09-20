@@ -15,6 +15,9 @@ import {
   directDistill,
   directRetriesUsed,
   resetDirectRetryLedger,
+  directMockAnalyzeSample,
+  directMockDistill,
+  directMockTryout,
 } from '../src/web/directClient';
 import {
   DEFAULT_BASE_URL,
@@ -395,5 +398,83 @@ describe('失败处理与服务端同一套策略', () => {
     const err = await directDistill({ runId: 'r', samples: [], preferences: [], previousRules: [] }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ApiClientError);
     expect((err as ApiClientError).errorCode).toBe('NO_CREDENTIALS');
+  });
+});
+
+describe('试玩模式：没有 Key 也能跑完整流程，且一个请求都不发', () => {
+  it('分析：不联网、带 mock 标记、引用仍然是正文里的真子串', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const { request } = await analyzeRequest();
+    const res = await directMockAnalyzeSample(request);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.analysis.mock).toBe(true);
+    expect(res.analysis.model).toContain('mock');
+    expect(res.analysis.status).toBe('ok');
+    expect(res.analysis.observations.length).toBeGreaterThan(0);
+    expect(res.analysis.attempts).toBe(0);
+    for (const obs of res.analysis.observations) {
+      for (const ev of obs.evidence) {
+        expect(ev.quote.length).toBeGreaterThan(0);
+        expect(TEXT.includes(ev.quote)).toBe(true);
+      }
+    }
+    expect(res.analysis.observations[0].limitations.join('')).toContain('Mock');
+  });
+
+  it('归纳：由试玩分析产出候选规则，并带上 Mock 局限', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const { request, sample } = await analyzeRequest();
+    const analyzed = await directMockAnalyzeSample(request);
+    const res = await directMockDistill({
+      runId: 'run_mock_distill',
+      samples: [
+        {
+          sampleId: sample.id,
+          revision: 1,
+          contentHash: sample.contentHash,
+          entryMode: 'task',
+          originDocumentId: null,
+          sourceType: 'self_current',
+          sceneTags: ['测试'],
+          chars: analyzed.analysis.stats.chars,
+          authorNote: null,
+          backgroundContext: null,
+          textSample: TEXT,
+          taskConstraints: [],
+          constraintKnown: true,
+          holdout: false,
+          partial: false,
+          analysis: analyzed.analysis,
+        },
+      ],
+      preferences: [],
+      previousRules: [],
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.mock).toBe(true);
+    expect(res.model).toContain('mock');
+    if (res.candidates.length > 0) {
+      expect(res.candidates[0].limitations.join('')).toContain('Mock');
+    }
+  });
+
+  it('试写：两版都是本地占位文本，字数落在题目要求区间', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await directMockTryout({
+      runId: 'run_mock_tryout',
+      prompt: '写一段雨天等车的话',
+      skillMarkdown: null,
+      targetMinChars: 300,
+      targetMaxChars: 500,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.mock).toBe(true);
+    expect(res.base.chars).toBeGreaterThanOrEqual(300);
+    expect(res.base.chars).toBeLessThanOrEqual(500);
+    expect(res.withSkill.chars).toBeGreaterThanOrEqual(300);
+    expect(res.base.text).not.toBe(res.withSkill.text);
   });
 });

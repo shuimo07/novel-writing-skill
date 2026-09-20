@@ -19,7 +19,7 @@ import { selectExportableRules } from '../../shared/rules';
 import { compileExport } from '../../shared/export';
 import { applyImport, createBackup, previewImport, serializeBackup } from '../../shared/backup';
 import { createABPair, revealCondition, type ABPair } from '../../shared/ab';
-import { tryout } from '../api';
+import { STATIC_DEMO, tryout } from '../api';
 import {
   Badge,
   Banner,
@@ -478,7 +478,9 @@ export function TryoutPanel({ onNavigate }: TryoutPanelProps) {
           {status?.mockEnabled && (
             <label className="checkbox">
               <input type="checkbox" checked={useMock} onChange={(e) => setUseMock(e.target.checked)} />
-              本次试写显式要 Mock 数据（服务端已开 ALLOW_MOCK_ANALYSIS；只是给你看看界面流程，不代表真实模型表现）
+              {STATIC_DEMO
+                ? '试玩：用本机占位文本排一次 A/B（不联网、不花钱，只给你看界面流程，不代表真实模型表现）'
+                : '本次试写显式要 Mock 数据（服务端已开 ALLOW_MOCK_ANALYSIS；只是给你看看界面流程，不代表真实模型表现）'}
             </label>
           )}
         </div>

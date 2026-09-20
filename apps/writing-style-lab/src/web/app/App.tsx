@@ -8,6 +8,7 @@ import { AnalysisPanel } from './AnalysisPanel';
 import { ApiKeyPanel } from './ApiKeyPanel';
 import { DirectSamplingPanel } from './DirectSamplingPanel';
 import { EditorPanel } from './EditorPanel';
+import { GettingStarted } from './GettingStarted';
 import { RulesPanel } from './RulesPanel';
 import { TasksPanel } from './TasksPanel';
 import { TryoutPanel } from './TryoutPanel';
@@ -25,7 +26,7 @@ const TABS: { key: TabKey; label: string; hint: string }[] = [
 ];
 
 function Shell() {
-  const { ready, fatalError, writeError, dismissWriteError, status, statusError } = useLab();
+  const { ready, fatalError, writeError, dismissWriteError, status, statusError, data } = useLab();
   const [tab, setTab] = useState<TabKey>('tasks');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [draftSignal, setDraftSignal] = useState(0);
@@ -120,6 +121,7 @@ function Shell() {
       )}
 
       <main className="app-main">
+        {ready && data.samples.length === 0 && <GettingStarted />}
         {tab === 'tasks' && (
           <TasksPanel
             onNavigate={navigate}

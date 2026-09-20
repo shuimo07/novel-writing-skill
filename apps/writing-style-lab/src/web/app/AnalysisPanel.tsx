@@ -27,7 +27,7 @@ import { checkLengthLimits, countChars } from '../../shared/text';
 import { crossCheckClaims } from '../../shared/stylometry';
 import { describeExclusion, selectSendableSamples } from '../../shared/rules';
 import { isAnalysisUsable } from '../../shared/verify';
-import { ApiClientError, analyzeSample, distill } from '../api';
+import { ApiClientError, STATIC_DEMO, analyzeSample, distill } from '../api';
 import {
   Badge,
   Banner,
@@ -398,14 +398,17 @@ export function AnalysisPanel({ onNavigate, onSelectTask }: AnalysisPanelProps) 
                 checked={useMock}
                 onChange={(e) => setUseMock(e.target.checked)}
               />
-              本次请求显式要 Mock 数据（服务端已开 ALLOW_MOCK_ANALYSIS；结果不能导出为 Skill）
+              {STATIC_DEMO
+                ? '试玩：用本机占位数据跑一遍（不联网、不花钱；结果不能导出为 Skill）'
+                : '本次请求显式要 Mock 数据（服务端已开 ALLOW_MOCK_ANALYSIS；结果不能导出为 Skill）'}
             </label>
           )}
         </div>
         {useMock && (
-          <Banner tone="mock" title="这一轮会拿 Mock 数据">
-            请求体里带了 mock:true，返回的是服务端模拟数据。它会照常写入本地库并打上 Mock 徽章，
-            但含 Mock 的结果一律不能导出为正式作者 Skill。
+          <Banner tone="mock" title={STATIC_DEMO ? '这一轮是本地试玩' : '这一轮会拿 Mock 数据'}>
+            {STATIC_DEMO
+              ? '完全在你本机用占位数据生成，不会发出任何请求、不会消耗任何额度。它会照常写入本地库并打上 Mock 徽章，方便你先看清流程；含 Mock 的结果一律不能导出为正式作者 Skill。'
+              : '请求体里带了 mock:true，返回的是服务端模拟数据。它会照常写入本地库并打上 Mock 徽章，但含 Mock 的结果一律不能导出为正式作者 Skill。'}
           </Banner>
         )}
 
@@ -557,7 +560,7 @@ export function AnalysisPanel({ onNavigate, onSelectTask }: AnalysisPanelProps) 
                         { key: '温度 / 最大 token', value: `${analysis.temperature} / ${analysis.maxTokens}` },
                         { key: 'prompt 版本', value: analysis.promptVersion },
                         { key: '用量', value: formatUsage(analysis.usage) },
-                        { key: '调用次数', value: analysis.attempts ? `${analysis.attempts} 次（含重试）` : '未知' },
+                        { key: '调用次数', value: analysis.mock ? '未调用（本地占位数据）' : analysis.attempts ? `${analysis.attempts} 次（含重试）` : '未知' },
                         { key: '耗时', value: `${analysis.elapsedMs} ms` },
                         { key: 'runId', value: analysis.runId ?? '—' },
                       ]}
