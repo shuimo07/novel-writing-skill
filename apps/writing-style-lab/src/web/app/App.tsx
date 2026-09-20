@@ -12,7 +12,7 @@ import { RulesPanel } from './RulesPanel';
 import { TasksPanel } from './TasksPanel';
 import { TryoutPanel } from './TryoutPanel';
 import { LabProvider, useLab } from './store';
-import { STATIC_DEMO, STATIC_DEMO_NOTICE } from '../api';
+import { STATIC_DEMO } from '../api';
 import { hasCredentials } from '../directCredentials';
 
 const TABS: { key: TabKey; label: string; hint: string }[] = [
@@ -29,7 +29,9 @@ function Shell() {
   const [tab, setTab] = useState<TabKey>('tasks');
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [draftSignal, setDraftSignal] = useState(0);
-  const [showKeyPanel, setShowKeyPanel] = useState(() => !hasCredentials());
+  // 默认收起：首屏先让人看到工具本身，别一进来就像在配置机器。
+  const [showKeyPanel, setShowKeyPanel] = useState(false);
+  const keyReady = STATIC_DEMO && hasCredentials();
 
   const navigate = (next: TabKey) => setTab(next);
   const bumpDraft = () => setDraftSignal((n) => n + 1);
@@ -79,14 +81,19 @@ function Shell() {
 
       {STATIC_DEMO && (
         <>
-          <Banner tone="warn" title="静态直连模式（GitHub Pages）">
-            {STATIC_DEMO_NOTICE}
-            <div className="action-row">
-              <Button onClick={() => setShowKeyPanel((value) => !value)}>
-                {showKeyPanel ? '收起凭据面板' : '配置模型凭据'}
+          {/* 首屏只留一行：先让人看到工具本身；长说明与 Key 输入都收在面板里。 */}
+          <div className="demo-strip">
+            <span className="demo-strip-text">
+              在线版（无服务端）：写作、样本库、直接采样、备份与导出开箱可用；
+              <strong>分析与试写</strong>需要你自己的 API Key——它只存在你的浏览器里，不会发给本站。
+            </span>
+            <span className="demo-strip-actions">
+              {keyReady && <Badge tone="ok">Key 已配置</Badge>}
+              <Button variant={keyReady ? 'default' : 'primary'} onClick={() => setShowKeyPanel((value) => !value)}>
+                {showKeyPanel ? '收起' : keyReady ? '更换 Key' : '填 API Key'}
               </Button>
-            </div>
-          </Banner>
+            </span>
+          </div>
           {showKeyPanel && <ApiKeyPanel />}
         </>
       )}

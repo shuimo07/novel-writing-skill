@@ -21,6 +21,7 @@ import {
   saveCredentials,
 } from '../directCredentials';
 import { useLab } from './store';
+import { STATIC_DEMO_NOTICE } from '../api';
 
 export function ApiKeyPanel() {
   const { refreshStatus } = useLab();
@@ -73,6 +74,7 @@ export function ApiKeyPanel() {
         )
       }
     >
+      <p className="hint-line">{STATIC_DEMO_NOTICE}</p>
       <Banner tone="info" title="Key 会去哪里">
         {customEndpoint ? (
           <>

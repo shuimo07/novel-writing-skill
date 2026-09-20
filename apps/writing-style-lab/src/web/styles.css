@@ -1194,3 +1194,40 @@ ol {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* ---------------------------------------------------------- 在线版首屏提示条
+   只占一行：先让人看到工具本身，凭据面板按需展开。 */
+
+.demo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line, #e3e6ec);
+  border-left: 3px solid var(--brand, #2b5cd9);
+  border-radius: 6px;
+  background: #f7f9fd;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.demo-strip-text {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.demo-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .demo-strip-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
