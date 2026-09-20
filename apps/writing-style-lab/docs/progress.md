@@ -22,6 +22,11 @@
 | 静态演示版（GitHub Pages） | `.github/workflows/pages.yml` + `PAGES_BASE` / `VITE_STATIC_DEMO` 开关；本地已验证两种构建产物（`base=/` 与 `/novel-writing-skill/`）与「资源路径正确、无密钥痕迹、开关生效」 |
 | 静态直连模式（BYOK：访客自带 Key 直连模型） | `src/web/directCredentials.ts` + `directClient.ts` + `app/ApiKeyPanel.tsx`；复用服务端同一套提示词与校验关卡（`server/prompts.ts` 只依赖 shared，可直接被前端 import）。`tests/direct-mode.test.ts` 18 个用例覆盖端点/参数/校验不放松/重试额度/Key 不进持久存储 |
 | 端点可配置 | 默认 DeepSeek 官方，可填任何 OpenAI 兼容的 https 端点（含自建 Worker）；只接受 https，非法地址回落默认 |
+| 在线版上线（GitHub Pages） | <https://shuimo07.github.io/novel-writing-skill/> —— 分支部署（`main` / `/docs`），状态 `built`；线上实测：index.html 200、JS/CSS 200、含直连版文案、**0 处密钥形态、无服务端代码** |
+| 首屏体验 | 黄色警示横幅改为一行紧凑提示条；凭据面板默认收起；未填 Key 时不再显示红色告警徽章（改橙色「未填 Key」） |
+| 三分钟上手 + 示例数据 | `GettingStarted.tsx` + `exampleData.ts`：三步引导 + 一键载入 3 篇示例文本（固定 ID、可一键删除、不联网） |
+| 无 Key 试玩 | `directMock*`：静态版没填 Key 时用本机占位数据跑完分析/归纳/试写，**一个请求都不发**，仍过同一套校验关卡，结果带 Mock 标记且不能导出为正式 Skill |
+| 安全收尾（本机） | `E:\AI\.gitignore` 补上 `.git-credentials`（原先一次 `git add -A` 就会把凭据推上公开仓库）；33 个本地日志文件里的 token **已抹除**（324 处，复核为 0）；`.git-credentials` 里的 token 条目已清除（原文件备份在 `E:\AI\.tmp\`）。经核查：该 token **从未被提交、从未被推送**，没有公开泄露 |
 
 ## in_progress
 
@@ -31,7 +36,7 @@
 
 | 项 | 阻塞条件 |
 | --- | --- |
-| 仓库改名为 `novel-writing-skill` | 你给的 fine-grained PAT 缺少 `Administration: Read and write`，GitHub API 返回 403「Resource not accessible by personal access token」。推送权限正常，因此代码可以推；**改名需要你补权限或在网页端手动改**。改名后旧地址会自动跳转，不影响本地 remote。 |
+| GitHub Actions 自动部署（可选升级） | fine-grained PAT 缺 `Workflows: Read and write`，推送 `.github/workflows/pages.yml` 会被 GitHub 拒收（`refusing to allow a Personal Access Token to create or update workflow`）。**当前不影响使用**：线上已用 Pages 分支部署上线，见下方 done。workflow 文件备份在本地，等权限补上后可切换（届时需把 Pages 源改为 GitHub Actions，并删除 `docs/` 以免两套并存）。 |
 
 ## 未验证项（不得写成已通过）
 
@@ -42,6 +47,8 @@
 3. **作者效果**：导出的 Skill 像不像你、A/B 有没有差别，只能由你本人判断；一次 A/B 不能证明效果。
 4. **归纳路径的并发去重**：与另两条路径共用同一机制并已单元验证，但没有做并发端到端实测。
 5. **120 秒超时**：只验证了 signal 传递与超时到错误码的映射，没有真等满 120 秒。
+6. **在线版的真机交互**：线上页面「能加载、资源 200、含正确文案」已实测；但真人点击（填 Key、试玩、
+   A/B、备份导入）与手机端排版仍未验证。
 
 ## 本阶段的技术取舍（记录在此，不另开文档）
 
