@@ -10,6 +10,7 @@
     "dev:web": "vite",
     "build": "npm run typecheck && npm run build:web",
     "build:web": "vite build",
+    "build:pages": "node scripts/build-pages.mjs",
     "start": "tsx src/server/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",

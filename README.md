@@ -14,6 +14,8 @@
 
 ## 应用：文风采样器（apps/writing-style-lab）
 
+**在线版（GitHub Pages，自带 Key 即可用）**：<https://shuimo07.github.io/novel-writing-skill/>
+
 本地单用户工具：按写作框架亲自写样本，**或把已经写好的文字直接丢进来**；程序调用 DeepSeek 分析
 **作者本人样本**，汇总**可核查**的文风规则；作者接受、修改或拒绝后，导出可给其他写作智能体用的
 `SKILL.md`，再用新题目做 A/B 对照试写。
