@@ -52,8 +52,12 @@ function Shell() {
             </Badge>
           ) : (
             <>
-              <Badge tone={status.apiKeyConfigured ? 'ok' : 'danger'}>
-                {status.apiKeyConfigured ? 'API Key 已配置' : '未配置真实分析'}
+              <Badge tone={status.apiKeyConfigured ? 'ok' : STATIC_DEMO ? 'warn' : 'danger'}>
+                {status.apiKeyConfigured
+                  ? 'API Key 已配置'
+                  : STATIC_DEMO
+                    ? '未填 Key（分析/试写需要）'
+                    : '未配置真实分析'}
               </Badge>
               {status.mockEnabled && <Badge tone="mock">Mock 模式</Badge>}
               <Badge tone="neutral">{status.model}</Badge>
